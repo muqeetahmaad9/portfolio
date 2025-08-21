@@ -20,8 +20,8 @@ It showcases my skills, projects, certifications, and experience as a **Computer
 ---
 
 ## 📸 Preview
-![Portfolio Preview](<img width="1579" height="761" alt="image" src="https://github.com/user-attachments/assets/995f2b49-c4aa-46a7-82cb-802f94de2fc6" />
-)  
+<img width="1579" height="761" alt="image" src="https://github.com/user-attachments/assets/c29fc976-7ac8-4f0b-af07-fae563baaf64" />
+
 
 
 
