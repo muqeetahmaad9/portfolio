@@ -6,7 +6,7 @@ It showcases my skills, projects, certifications, and experience as a **Computer
 ---
 
 ## 🔗 Live Demo
-👉 [View Portfolio](https://your-portfolio.netlify.app)  
+👉 [View Portfolio]([https://your-portfolio.netlify.app](https://muqeetahmad-dev.netlify.app/).
 
 
 ---
