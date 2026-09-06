@@ -256,13 +256,6 @@ a  { text-decoration: none; color: inherit; }
   .ascii-canvas { display: none; }
 }
 
-/* Divider line between left/center and right/center */
-.hero-center::before {
-  content: '';
-  position: absolute; top: 0; left: 50%; bottom: 0;
-  width: 1px; background: #555; z-index: 20;
-}
-
 /* Scroll indicator */
 .hero-scroll {
   position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
@@ -1176,7 +1169,6 @@ a  { text-decoration: none; color: inherit; }
   .hero { grid-template-columns: 1fr; min-height: auto; }
   .hero-center { order: -1; justify-content: center; padding: 2.5rem 0 1rem; }
   .hero-photo-wrap { width: 165px; }
-  .hero-center::before { display: none; }
   .hero-left { text-align: center; padding: 2rem; background: rgba(255,255,255,0.72); }
   .hero-left .hero-sub { margin: 0 auto; }
   .hero-right { text-align: center; padding: 2rem; }
