@@ -611,10 +611,10 @@ a  { text-decoration: none; color: inherit; }
 }
 
 /* ── PROJECTS (dark neon cards) ────────────────────────────────────── */
-#projects.section--gray { background: #0a1120; color: #cdd6e6; border-top: 1px solid rgba(100,255,218,0.08); }
-#projects .section-label { color: #5f6b82; }
-#projects .section-title { color: #eef2fb; }
-#projects .section-title strong { color: #fff; }
+#projects.section--gray { background: var(--white); color: #333; border-top: 1px solid var(--border); }
+#projects .section-label { color: var(--mid); }
+#projects .section-title { color: var(--black); }
+#projects .section-title strong { color: var(--black); }
 
 .projects-grid {
   display: grid;
@@ -1328,7 +1328,7 @@ body > *:not(#bg-web):not(#loader):not(#cursor-dot):not(#cursor-ring):not(#spotl
 #certifications.section,
 #experience.section,
 #fyp.section { background: rgba(10,17,32,0.78) !important; }
-#projects.section--gray { background: rgba(10,17,32,0.78) !important; }
+#projects.section--gray { background: rgba(255,255,255,0.78) !important; }
 #education.section { background: rgba(255,255,255,0.78) !important; }
 .section--dark { background: rgba(17,17,17,0.80) !important; }
 .section:not(.section--gray):not(.section--dark):not(#experience):not(#education):not(#fyp):not(#certifications) {
@@ -2979,7 +2979,7 @@ function typewrite(el, text, speed) {
 
   // adapt line/dot colour to whichever section is behind the cursor's vertical band
   function isDarkBehind(y) {
-    const zones = document.querySelectorAll('#experience,#fyp,#projects,#certifications,.section--dark,.site-header,.site-footer,.hero-right');
+    const zones = document.querySelectorAll('#experience,#fyp,#certifications,.section--dark,.site-header,.site-footer,.hero-right');
     for (const el of zones) {
       const r = el.getBoundingClientRect();
       if (y >= r.top && y <= r.bottom) return true;
