@@ -2313,9 +2313,9 @@ body > *:not(#bg-web):not(#loader):not(#cursor-dot):not(#cursor-ring):not(#spotl
 
   const COLS    = 46;     // digit columns across the FULL portrait
   const ASPECT  = 0.52;   // monospace cell w/h ratio -> row count
-  const SPLIT   = 0.5;    // fraction of width that is BINARY (left). rest = real photo (right).
-  const SEAM_FEATHER = 0.05;  // soft blend at the vertical seam, fraction of width
-  const SCAN_MS = 2600;   // time for the scan line to travel top -> bottom (one pass)
+  const SCAN_MS = 2200;   // time for one scan pass top -> bottom
+  const HOLD_MS = 5000;   // how long the clean photo stays visible
+  const FEATHER = 0.12;   // soft edge of the reveal, fraction of height
   const INK  = '#1ec8b0'; // bright teal digit (the face)
   const DIM  = 'rgba(30,200,176,0.18)'; // faint teal digit (background)
   const BG   = '#06110f';
@@ -2366,71 +2366,87 @@ body > *:not(#bg-web):not(#loader):not(#cursor-dot):not(#cursor-ring):not(#spotl
     ctx.font = (Math.min(cw, ch) * 1.32) + 'px "JetBrains Mono", ui-monospace, monospace';
   }
 
-  // The RIGHT part of the canvas stays fully transparent -> the real <img> beneath
-  // shows through unchanged. The LEFT part is the binary field, with a glowing
-  // scan line at vertical position `scan` (0..1).
-  function draw(scan) {
+  // cover = 1 -> whole portrait is binary. cover = 0 -> whole portrait is the photo.
+  // `edge` (0..1) is the vertical position of the glowing scan line.
+  // when revealing: everything ABOVE edge is photo, below is binary.
+  // when covering : everything ABOVE edge is binary, below is photo.
+  function draw(cover, edge, revealing) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const H = canvas.height;
+    const featPx = FEATHER * H;
+    const edgeY = edge * H;
 
-    const seamX  = SPLIT * canvas.width;               // binary occupies x < seamX
-    const featPx = SEAM_FEATHER * canvas.width;
+    // per-cell alpha for the binary layer, based on which side of the scan line it is
+    function binAlphaAt(py) {
+      if (cover >= 0.999) return 1;          // fully covered, no scan running
+      if (cover <= 0.001) return 0;          // fully revealed
+      if (revealing) {
+        // above edge -> photo (bin alpha 0), below -> binary (1), feathered
+        return Math.max(0, Math.min(1, (py - edgeY + featPx) / (2 * featPx)));
+      } else {
+        // above edge -> binary (1), below -> photo (0), feathered
+        return Math.max(0, Math.min(1, (edgeY + featPx - py) / (2 * featPx)));
+      }
+    }
 
-    // 1. paint the binary panel, but only draw digits at/before the seam
+    // 1. digits
     for (let n = 0; n < cells.length; n++) {
       const c = cells[n];
-      const px = c.x * cw;
-      if (px > seamX + featPx) continue;               // skip the photo side entirely
-
-      // fade digits out across the feather zone so the seam isn't a hard cut
-      let alpha = 1;
-      if (px > seamX - featPx) alpha = Math.max(0, ((seamX + featPx) - px) / (2 * featPx));
-
-      const digit = (Math.random() < 0.5) ? '0' : '1'; // shimmer every frame
-      ctx.globalAlpha = alpha;
+      const py = c.y * ch;
+      const a = binAlphaAt(py);
+      if (a <= 0.01) continue;
+      const digit = (Math.random() < 0.5) ? '0' : '1';
+      ctx.globalAlpha = a;
       ctx.fillStyle = c.on ? INK : DIM;
-      ctx.fillText(digit, px, c.y * ch);
+      ctx.fillText(digit, c.x * cw, py);
     }
     ctx.globalAlpha = 1;
 
-    // 2. solid-ish dark backing for the binary panel so the photo doesn't bleed through
+    // 2. dark backing behind the digits (so the photo doesn't bleed through the binary area)
     ctx.globalCompositeOperation = 'destination-over';
-    const bg = ctx.createLinearGradient(seamX - featPx, 0, seamX + featPx, 0);
-    bg.addColorStop(0, 'rgba(6,17,15,0.96)');
-    bg.addColorStop(1, 'rgba(6,17,15,0)');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, seamX + featPx, canvas.height);
+    if (cover >= 0.999) {
+      ctx.fillStyle = 'rgba(6,17,15,0.97)';
+      ctx.fillRect(0, 0, canvas.width, H);
+    } else if (cover > 0.001) {
+      const g = ctx.createLinearGradient(0, edgeY - featPx, 0, edgeY + featPx);
+      if (revealing) { g.addColorStop(0, 'rgba(6,17,15,0)'); g.addColorStop(1, 'rgba(6,17,15,0.97)'); }
+      else           { g.addColorStop(0, 'rgba(6,17,15,0.97)'); g.addColorStop(1, 'rgba(6,17,15,0)'); }
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, canvas.width, H);
+    }
     ctx.globalCompositeOperation = 'source-over';
 
-    // 3. glowing horizontal scan line, confined to the binary panel
-    const y = scan * canvas.height;
-    const panelW = seamX + featPx;
-    const grd = ctx.createLinearGradient(0, y - 18 * dpr, 0, y + 18 * dpr);
-    grd.addColorStop(0, 'rgba(30,200,176,0)');
-    grd.addColorStop(0.5, 'rgba(150,255,230,0.5)');
-    grd.addColorStop(1, 'rgba(30,200,176,0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, y - 18 * dpr, panelW, 36 * dpr);
-
-    // brighten the digits the scan line is currently passing over
-    ctx.globalCompositeOperation = 'source-atop';
-    const glow = ctx.createLinearGradient(0, y - 26 * dpr, 0, y + 26 * dpr);
-    glow.addColorStop(0, 'rgba(150,255,230,0)');
-    glow.addColorStop(0.5, 'rgba(150,255,230,0.5)');
-    glow.addColorStop(1, 'rgba(150,255,230,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, y - 26 * dpr, panelW, 52 * dpr);
-    ctx.globalCompositeOperation = 'source-over';
+    // 3. glowing horizontal scan line (only while a pass is running)
+    if (cover > 0.001 && cover < 0.999) {
+      const grd = ctx.createLinearGradient(0, edgeY - 20 * dpr, 0, edgeY + 20 * dpr);
+      grd.addColorStop(0, 'rgba(30,200,176,0)');
+      grd.addColorStop(0.5, 'rgba(160,255,235,0.65)');
+      grd.addColorStop(1, 'rgba(30,200,176,0)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, edgeY - 20 * dpr, canvas.width, 40 * dpr);
+    }
   }
 
+  // phases: cover(1) -> revealScan -> photoHold(5s) -> coverScan -> repeat
   function loop() {
-    let start = null;
+    let phase = 'reveal', t0 = null;
     function step(t) {
       if (!running) return;
-      if (start === null) start = t;
-      const cycle = (t - start) % (SCAN_MS * 2);
-      const half  = cycle / SCAN_MS;
-      const scan  = half < 1 ? half : 2 - half;   // 0->1 then 1->0, looping
-      draw(scan);
+      if (t0 === null) t0 = t;
+      const dt = t - t0;
+
+      if (phase === 'reveal') {
+        const k = Math.min(dt / SCAN_MS, 1);
+        draw(1 - k, k, true);           // scan travels down, photo appears above it
+        if (k >= 1) { phase = 'hold'; t0 = t; }
+      } else if (phase === 'hold') {
+        draw(0, 1, true);               // clean photo
+        if (dt >= HOLD_MS) { phase = 'cover'; t0 = t; }
+      } else { // cover
+        const k = Math.min(dt / SCAN_MS, 1);
+        draw(k, k, false);             // scan travels down, binary fills in above it
+        if (k >= 1) { phase = 'reveal'; t0 = t; }
+      }
       requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
