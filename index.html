@@ -2517,15 +2517,23 @@ document.querySelectorAll(
   if (!card) return;
   const rows = card.querySelectorAll('.detail-row');
   rows.forEach((r, i) => r.style.setProperty('--row-delay', (0.15 + i * 0.09).toFixed(2) + 's'));
+
+  let fired = false;
+  function fire() {
+    if (fired) return;
+    fired = true;
+    // small delay so the parent .about-grid fade-in has begun
+    setTimeout(() => card.classList.add('scan', 'reveal'), 250);
+  }
+
   const obs = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        card.classList.add('scan', 'reveal');
-        obs.disconnect();
-      }
-    });
-  }, { threshold: 0.35 });
+    entries.forEach(e => { if (e.isIntersecting) { fire(); obs.disconnect(); } });
+  }, { threshold: 0.15 });
   obs.observe(card);
+
+  // fallback: if it's already in view on load, fire anyway
+  const r = card.getBoundingClientRect();
+  if (r.top < window.innerHeight && r.bottom > 0) fire();
 })();
 
 /* ── "Muqeet Ahmad" — binary field decodes into the name ───────────── */
