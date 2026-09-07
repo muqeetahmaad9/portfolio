@@ -454,10 +454,10 @@ a  { text-decoration: none; color: inherit; }
 .stat-item:hover::after { transform: scaleX(1); }
 
 /* ── EXPERIENCE (glowing icon cards, dark band) ─────────────────────── */
-#experience { background: #0a1120; color: #cdd6e6; }
-#experience .section-label { color: #5f6b82; }
-#experience .section-title { color: #eef2fb; }
-#experience .section-title strong { color: #fff; }
+#experience { background: var(--white); color: #333; }
+#experience .section-label { color: var(--mid); }
+#experience .section-title { color: var(--black); }
+#experience .section-title strong { color: var(--black); }
 
 /* Education: light band (matches header/hero), dark cards float on white */
 #education { background: var(--white); color: #333; border-top: 1px solid var(--border); }
@@ -574,10 +574,10 @@ a  { text-decoration: none; color: inherit; }
 .edu-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
 
 /* ── FYP (single feature card, dark band) ──────────────────────────── */
-#fyp { background: #0a1120; color: #cdd6e6; border-top: 1px solid rgba(100,255,218,0.08); }
-#fyp .section-label { color: #5f6b82; }
-#fyp .section-title { color: #eef2fb; }
-#fyp .section-title strong { color: #fff; }
+#fyp { background: var(--white); color: #333; border-top: 1px solid var(--border); }
+#fyp .section-label { color: var(--mid); }
+#fyp .section-title { color: var(--black); }
+#fyp .section-title strong { color: var(--black); }
 
 .fyp-card {
   --neon-teal: #64ffda;
@@ -764,10 +764,10 @@ a  { text-decoration: none; color: inherit; }
 .project-overlay { display: none; }
 
 /* ── CERTIFICATIONS (dark neon cards) ──────────────────────────────── */
-#certifications { background: #0a1120; color: #cdd6e6; border-top: 1px solid rgba(100,255,218,0.08); }
-#certifications .section-label { color: #5f6b82; }
-#certifications .section-title { color: #eef2fb; }
-#certifications .section-title strong { color: #fff; }
+#certifications { background: var(--white); color: #333; border-top: 1px solid var(--border); }
+#certifications .section-label { color: var(--mid); }
+#certifications .section-title { color: var(--black); }
+#certifications .section-title strong { color: var(--black); }
 
 .certs-grid {
   display: grid;
@@ -1433,8 +1433,8 @@ body > *:not(#bg-web):not(#loader):not(#cursor-dot):not(#cursor-ring):not(#spotl
 #about.section--gray { background: rgba(240,239,237,0.62) !important; }
 #certifications.section,
 #experience.section,
-#fyp.section { background: rgba(10,17,32,0.78) !important; }
-#projects.section--gray { background: rgba(255,255,255,0.78) !important; }
+#fyp.section,
+#projects.section--gray,
 #education.section { background: rgba(255,255,255,0.78) !important; }
 .section--dark:not(#contact) { background: rgba(17,17,17,0.80) !important; }
 #contact.section--dark { background: rgba(255,255,255,0.82) !important; }
@@ -3127,7 +3127,7 @@ function typewrite(el, text, speed) {
 
   // adapt line/dot colour to whichever section is behind the cursor's vertical band
   function isDarkBehind(y) {
-    const zones = document.querySelectorAll('#experience,#fyp,#certifications,.section--dark:not(#contact),.site-header,.site-footer,.hero-right');
+    const zones = document.querySelectorAll('.section--dark:not(#contact),.site-header,.site-footer,.hero-right');
     for (const el of zones) {
       const r = el.getBoundingClientRect();
       if (y >= r.top && y <= r.bottom) return true;
