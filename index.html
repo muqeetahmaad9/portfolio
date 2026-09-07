@@ -86,14 +86,32 @@ a  { text-decoration: none; color: inherit; }
 /* ── HEADER ────────────────────────────────────────────────────────── */
 .site-header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  background: var(--black);
-  border-bottom: 1px solid #2a2a2a;
+  background: rgba(15,15,17,0.72);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.site-header.scrolled {
+  background: rgba(12,12,14,0.9);
+  border-bottom-color: rgba(30,200,176,0.28);
+  box-shadow: 0 8px 30px -12px rgba(0,0,0,0.6);
+}
+/* scroll progress bar along the bottom edge */
+.site-header::after {
+  content: ''; position: absolute; left: 0; bottom: -1px; height: 2px;
+  width: var(--scroll-progress, 0%);
+  background: linear-gradient(90deg, #12a892, #26e0c4);
+  box-shadow: 0 0 10px rgba(38,224,196,0.6);
+  transition: width 0.1s linear;
 }
 .header-inner {
   max-width: var(--max-w); margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 2rem; height: 64px;
+  padding: 0 2rem; height: 72px;
+  transition: height 0.3s ease;
 }
+.site-header.scrolled .header-inner { height: 56px; }
 .logo { display: flex; align-items: center; }
 .logo-mark {
   width: 40px; height: 40px; border-radius: 50%;
@@ -101,13 +119,26 @@ a  { text-decoration: none; color: inherit; }
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display); font-size: 1rem; letter-spacing: 1px;
   font-weight: 700;
+  transition: width 0.3s ease, height 0.3s ease, font-size 0.3s ease;
 }
-.main-nav { display: flex; gap: 2rem; }
+.site-header.scrolled .logo-mark { width: 32px; height: 32px; font-size: 0.85rem; }
+
+.main-nav { display: flex; gap: 2rem; position: relative; }
 .main-nav a {
-  color: #aaa; font-size: 0.85rem; font-weight: 400;
-  letter-spacing: 0.5px; transition: color var(--transition);
+  color: #9a9a9f; font-size: 0.85rem; font-weight: 400;
+  letter-spacing: 0.5px; padding: 0.4rem 0;
+  transition: color var(--transition);
 }
 .main-nav a:hover { color: var(--white); }
+.main-nav a.active { color: #fff; }
+/* sliding active-section indicator */
+.nav-indicator {
+  position: absolute; bottom: -2px; left: 0; height: 2px; width: 0;
+  background: #26e0c4; border-radius: 2px;
+  box-shadow: 0 0 10px rgba(38,224,196,0.7);
+  transition: left 0.35s cubic-bezier(.4,0,.2,1), width 0.35s cubic-bezier(.4,0,.2,1), opacity 0.3s ease;
+  opacity: 0; pointer-events: none;
+}
 .header-social { display: flex; gap: 1.25rem; }
 .header-social a {
   color: #888; font-size: 0.95rem; transition: color var(--transition);
@@ -1468,6 +1499,7 @@ body > *:not(#bg-web):not(#loader):not(#cursor-dot):not(#cursor-ring):not(#spotl
         <a href="#projects">projects</a>
         <a href="#certifications">certifications</a>
         <a href="#contact">contact</a>
+        <span class="nav-indicator" id="nav-indicator"></span>
       </nav>
       <div class="header-social">
         <a href="https://www.linkedin.com/in/muqeet-ahmad" target="_blank" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
@@ -2484,21 +2516,61 @@ mobileNav.querySelectorAll('a').forEach(a => {
   a.addEventListener('click', () => mobileNav.classList.remove('open'));
 });
 
-/* ── ACTIVE NAV HIGHLIGHT ON SCROLL ────────────────────────────────── */
-const sections   = document.querySelectorAll('section[id], div[id]');
-const navLinks   = document.querySelectorAll('.main-nav a');
+/* ── HEADER: shrink-on-scroll + progress bar + active-section indicator ── */
+(function headerFx() {
+  const header    = document.querySelector('.site-header');
+  const navLinks  = [...document.querySelectorAll('.main-nav a')];
+  const indicator = document.getElementById('nav-indicator');
+  const nav       = document.querySelector('.main-nav');
+  const linkById  = {};
+  navLinks.forEach(a => { linkById[a.getAttribute('href').slice(1)] = a; });
 
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      navLinks.forEach(a => {
-        a.style.color = a.getAttribute('href') === '#' + entry.target.id ? '#fff' : '#aaa';
-      });
+  const targets = navLinks
+    .map(a => document.getElementById(a.getAttribute('href').slice(1)))
+    .filter(Boolean);
+
+  function moveIndicator(link) {
+    if (!link || !indicator) return;
+    navLinks.forEach(a => a.classList.toggle('active', a === link));
+    const navBox  = nav.getBoundingClientRect();
+    const linkBox = link.getBoundingClientRect();
+    indicator.style.left  = (linkBox.left - navBox.left) + 'px';
+    indicator.style.width = linkBox.width + 'px';
+    indicator.style.opacity = '1';
+  }
+
+  // which section is active = the one whose top is nearest above the viewport middle
+  function updateActive() {
+    const mid = window.innerHeight * 0.35;
+    let current = null;
+    for (const sec of targets) {
+      const r = sec.getBoundingClientRect();
+      if (r.top <= mid && r.bottom >= mid) { current = sec; break; }
+      if (r.top <= mid) current = sec;
     }
-  });
-}, { threshold: 0.35 });
+    if (current) moveIndicator(linkById[current.id]);
+    else if (indicator) indicator.style.opacity = '0';   // above the first section (hero)
+  }
 
-sections.forEach(s => observer.observe(s));
+  function onScroll() {
+    const y = window.scrollY;
+    header.classList.toggle('scrolled', y > 40);
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = h > 0 ? (y / h) * 100 : 0;
+    header.style.setProperty('--scroll-progress', pct.toFixed(2) + '%');
+    updateActive();
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', () => {
+    const active = document.querySelector('.main-nav a.active');
+    if (active) moveIndicator(active);
+    onScroll();
+  });
+  // recalc once fonts/layout settle
+  window.addEventListener('load', onScroll);
+  onScroll();
+})();
 
 /* ── SCROLL-IN ANIMATIONS ───────────────────────────────────────────── */
 const animateOnScroll = new IntersectionObserver((entries) => {
